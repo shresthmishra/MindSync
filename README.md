@@ -3,7 +3,7 @@
 ![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Language](https://img.shields.io/badge/Language-Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
 
-# Description
+## Description
 
 A privacy-first Android journaling application designed to facilitate emotional clarity and proactive mental wellness through on-device data processing and sentiment analysis.
 
