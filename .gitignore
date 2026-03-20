@@ -3,7 +3,7 @@
 /build/
 *.main.kts
 
-# IDE - IntelliJ / Android Studio
+# Android Studio
 .idea/
 *.iml
 *.ipr
