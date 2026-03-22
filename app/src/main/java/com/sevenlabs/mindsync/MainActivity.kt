@@ -15,6 +15,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
@@ -67,6 +68,7 @@ import kotlin.math.absoluteValue
 val MindSyncBlue = Color(0xFF0369A1)
 val SkyBlueAccent = Color(0xFF0EA5E9)
 val SlateText = Color(0xFF0F172A)
+val InsightBg = Color(0xFFF0F9FF)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,9 +87,12 @@ class MainActivity : ComponentActivity() {
 fun JournalScreen() {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("mindsync_prefs", Context.MODE_PRIVATE) }
+
     var entryText by remember { mutableStateOf(prefs.getString("draft_entry", "") ?: "") }
     var showEmptyDialog by remember { mutableStateOf(false) }
     var showSuccessDialog by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var entryToDelete by remember { mutableStateOf<JournalEntry?>(null) }
     var isWritingFocused by remember { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
@@ -96,19 +101,21 @@ fun JournalScreen() {
     val entries by journalDao.getAllEntries().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
 
-    val greeting = remember { getGreeting() }
-    val dailyQuote = remember { getDailyQuote() }
+    val greeting: String = remember { getGreeting() }
+    val dailyQuote: String = remember { getDailyQuote(context) }
     val timelineDays = remember { getPastTimelineDays() }
 
     val verticalListState = rememberLazyListState()
     val snapBehavior = rememberSnapFlingBehavior(lazyListState = verticalListState)
     val mainGradient = Brush.verticalGradient(listOf(Color(0xFFFDE4E6), Color(0xFFFFDAB9), Color(0xFF8A9AF8)))
+
     val snackbarHostState = remember { SnackbarHostState() }
     var lastBackPressTime by remember { mutableLongStateOf(0L) }
 
     val isKeyboardVisible = WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
-    val focusDimAlpha by animateFloatAsState(targetValue = if (isWritingFocused) 0.10f else 1f)
-    val focusBlurRadius by animateDpAsState(targetValue = if (isWritingFocused) 14.dp else 0.dp)
+
+    val focusDimAlpha by animateFloatAsState(targetValue = if (isWritingFocused) 0.10f else 1f, label = "dim")
+    val focusBlurRadius by animateDpAsState(targetValue = if (isWritingFocused) 14.dp else 0.dp, label = "blur")
 
     val pagerState = rememberPagerState(pageCount = { timelineDays.size })
     val calendarListState = rememberLazyListState()
@@ -158,6 +165,7 @@ fun JournalScreen() {
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             containerColor = Color.Transparent
         ) { innerPadding ->
+
             val scrollProgress by remember {
                 derivedStateOf {
                     if (verticalListState.layoutInfo.visibleItemsInfo.isEmpty()) 0f
@@ -172,7 +180,35 @@ fun JournalScreen() {
                 AlertDialog(onDismissRequest = { showSuccessDialog = false }, confirmButton = { TextButton(onClick = { showSuccessDialog = false }) { Text("Great!", color = MindSyncBlue, fontWeight = FontWeight.Bold) } }, title = { Text("Done", color = MindSyncBlue, fontWeight = FontWeight.Bold) }, text = { Text("Entry saved successfully!", color = SlateText) }, shape = RoundedCornerShape(24.dp), containerColor = Color.White)
             }
             if (showEmptyDialog) {
-                AlertDialog(onDismissRequest = { showEmptyDialog = false }, confirmButton = { TextButton(onClick = { showEmptyDialog = false }) { Text("I'll write something", color = MindSyncBlue, fontWeight = FontWeight.Bold) } }, title = { Text("Pause for a moment", color = MindSyncBlue, fontWeight = FontWeight.Bold) }, text = { Text("It looks like your entry is empty. Your thoughts matter.", color = SlateText) }, shape = RoundedCornerShape(24.dp), containerColor = Color.White)
+                AlertDialog(onDismissRequest = { showEmptyDialog = false }, confirmButton = { TextButton(onClick = { showEmptyDialog = false }) { Text("I'll write something", color = MindSyncBlue, fontWeight = FontWeight.Bold) } }, title = { Text("Pause for a moment", color = MindSyncBlue, fontWeight = FontWeight.Bold) }, text = { Text("It looks like your entry is empty. Your thoughts and feelings matter.", color = SlateText) }, shape = RoundedCornerShape(24.dp), containerColor = Color.White)
+            }
+
+            if (showDeleteConfirm) {
+                AlertDialog(
+                    onDismissRequest = {
+                        showDeleteConfirm = false
+                        entryToDelete = null
+                    },
+                    title = { Text("Delete Entry?", color = MindSyncBlue, fontWeight = FontWeight.Bold) },
+                    text = { Text("This will permanently remove this reflection. Are you sure?", color = SlateText) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            entryToDelete?.let { entry ->
+                                scope.launch { journalDao.deleteEntry(entry.id) }
+                            }
+                            showDeleteConfirm = false
+                            entryToDelete = null
+                        }) { Text("Delete", color = Color.Red, fontWeight = FontWeight.Bold) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = {
+                            showDeleteConfirm = false
+                            entryToDelete = null
+                        }) { Text("Cancel", color = SlateText) }
+                    },
+                    shape = RoundedCornerShape(24.dp),
+                    containerColor = Color.White
+                )
             }
 
             val todayLabel = remember { SimpleDateFormat("MMMM dd", Locale.getDefault()).format(Date()) }
@@ -189,6 +225,7 @@ fun JournalScreen() {
                             Box(modifier = Modifier.size(280.dp).offset(x = (-50).dp, y = 100.dp).alpha(0.3f).clip(CircleShape).background(Color.White))
                             Box(modifier = Modifier.size(200.dp).offset(x = 200.dp, y = 300.dp).alpha(0.2f).clip(CircleShape).background(Color.White))
                         }
+
                         Column(
                             modifier = Modifier.fillMaxSize().statusBarsPadding().imePadding().padding(horizontal = 24.dp).padding(top = 12.dp).verticalScroll(rememberScrollState())
                         ) {
@@ -201,7 +238,9 @@ fun JournalScreen() {
                             Text(text = greeting, fontSize = 34.sp, fontWeight = FontWeight.ExtraBold, color = MindSyncBlue, modifier = Modifier.alpha(focusDimAlpha).blur(focusBlurRadius))
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(text = dailyQuote, color = SkyBlueAccent, fontSize = 15.sp, fontWeight = FontWeight.Medium, modifier = Modifier.alpha(focusDimAlpha).blur(focusBlurRadius))
+
                             Spacer(modifier = Modifier.height(32.dp))
+
                             Card(
                                 shape = RoundedCornerShape(24.dp),
                                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -216,7 +255,9 @@ fun JournalScreen() {
                                     colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, focusedTextColor = SlateText, unfocusedTextColor = SlateText)
                                 )
                             }
+
                             Spacer(modifier = Modifier.height(32.dp))
+
                             Box(modifier = Modifier.fillMaxWidth().alpha(focusDimAlpha).blur(focusBlurRadius), contentAlignment = Alignment.Center) {
                                 Button(
                                     onClick = {
@@ -224,7 +265,7 @@ fun JournalScreen() {
                                             scope.launch {
                                                 val date = SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault()).format(Date())
                                                 val time = SimpleDateFormat("hh:mm:ss a", Locale.getDefault()).format(Date())
-                                                journalDao.insertEntry(JournalEntry(date = date, time = time, content = entryText, aiInsight = null))
+                                                journalDao.insertEntry(JournalEntry(date = date, time = time, content = entryText, aiInsight = "Analyzing your reflection..."))
                                                 entryText = ""; prefs.edit().remove("draft_entry").apply()
                                                 focusManager.clearFocus(); showSuccessDialog = true
                                             }
@@ -241,6 +282,7 @@ fun JournalScreen() {
                             }
                             Spacer(modifier = Modifier.height(if (isWritingFocused) 80.dp else 40.dp))
                         }
+
                         Column(
                             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 30.dp).alpha((1f - (scrollProgress * 2f)) * focusDimAlpha).blur(focusBlurRadius),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -250,6 +292,7 @@ fun JournalScreen() {
                         }
                     }
                 }
+
                 item {
                     Box(modifier = Modifier.fillParentMaxSize()) {
                         Column(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(vertical = 24.dp)) {
@@ -258,6 +301,7 @@ fun JournalScreen() {
                                 Text(text = "Journal History", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MindSyncBlue)
                             }
                             Spacer(modifier = Modifier.height(20.dp))
+
                             LazyRow(state = calendarListState, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 items(timelineDays) { dateObj ->
                                     val dateLabel = SimpleDateFormat("MMMM dd", Locale.getDefault()).format(dateObj)
@@ -279,26 +323,33 @@ fun JournalScreen() {
                                 }
                             }
                             Spacer(modifier = Modifier.height(24.dp))
+
                             Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
                                 HorizontalPager(
                                     state = pagerState,
-                                    contentPadding = PaddingValues(horizontal = 48.dp),
+                                    contentPadding = PaddingValues(horizontal = 32.dp),
                                     pageSpacing = 16.dp,
                                     modifier = Modifier.fillMaxWidth()
                                 ) { page ->
                                     val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
+
                                     Box(
                                         modifier = Modifier.graphicsLayer {
-                                            val scale = lerp(start = 0.85f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
+                                            val scale = lerp(start = 0.9f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
                                             scaleX = scale
                                             scaleY = scale
+
                                             alpha = lerp(start = 0.5f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
                                         }
                                     ) {
                                         val dateForPage = SimpleDateFormat("MMMM dd", Locale.getDefault()).format(timelineDays[page])
                                         val entryForPage = entries.find { it.date.contains(dateForPage) }
+
                                         if (entryForPage != null) {
-                                            PreviousEntryCard(entry = entryForPage, onDelete = { scope.launch { journalDao.deleteEntry(entryForPage.id) } })
+                                            PreviousEntryCard(entry = entryForPage, onDelete = {
+                                                entryToDelete = entryForPage
+                                                showDeleteConfirm = true
+                                            })
                                         } else {
                                             Column(
                                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -333,18 +384,38 @@ fun JournalScreen() {
 
 @Composable
 fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit) {
-    val scrollTrap = remember { object : NestedScrollConnection { override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset { return available } } }
+    val scrollTrap = remember {
+        object : NestedScrollConnection {
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                return available
+            }
+        }
+    }
     Card(shape = RoundedCornerShape(32.dp), colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp), modifier = Modifier.fillMaxWidth().height(360.dp)) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(entry.date, color = MindSyncBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                Column {
+                    Text(entry.date, color = MindSyncBlue, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     Text(entry.time, color = MindSyncBlue.copy(alpha = 0.5f), fontSize = 12.sp)
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(24.dp).alpha(0.3f)) { Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp)) }
             }
             Column(modifier = Modifier.fillMaxSize().nestedScroll(scrollTrap).padding(start = 24.dp, end = 24.dp, bottom = 24.dp).verticalScroll(rememberScrollState())) {
                 Text(text = entry.content, color = SlateText, fontSize = 16.sp, lineHeight = 22.sp)
+                entry.aiInsight?.let { insight ->
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = InsightBg), border = BorderStroke(1.dp, MindSyncBlue.copy(alpha = 0.1f))) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.AutoAwesome, null, tint = MindSyncBlue, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("AI Insights", color = MindSyncBlue, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(insight, fontSize = 13.sp, color = SlateText.copy(alpha = 0.8f), lineHeight = 18.sp)
+                        }
+                    }
+                }
             }
         }
     }
@@ -375,7 +446,7 @@ fun getGreeting(): String {
     return if (hour < 12) "Good morning!" else if (hour < 17) "Good afternoon!" else "Good evening!"
 }
 
-fun getDailyQuote(): String {
-    val quotes = listOf("\"Small steps lead to big results.\"", "\"Reflection is the beginning of wisdom.\"", "\"Your mind is your sanctuary.\"")
+fun getDailyQuote(context: Context): String {
+    val quotes = context.resources.getStringArray(R.array.daily_quotes)
     return quotes[Calendar.getInstance().get(Calendar.DAY_OF_YEAR) % quotes.size]
 }

@@ -1,3 +1,348 @@
 <resources>
     <string name="app_name">MindSync</string>
+
+    <string-array name="daily_quotes">
+        <item>\"The only way to do great work is to love what you do.\"</item>
+        <item>\"Success is not final, failure is not fatal: it is the courage to continue that counts.\"</item>
+        <item>\"Believe you can and you\'re halfway there.\"</item>
+        <item>\"Your time is limited, so don\'t waste it living someone else\'s life.\"</item>
+        <item>\"Hardships often prepare ordinary people for an extraordinary destiny.\"</item>
+        <item>\"Do what you can, with what you have, where you are.\"</item>
+        <item>\"Don\'t let yesterday take up too much of today.\"</item>
+        <item>\"If you are working on something that you really care about, you don\'t have to be pushed.\"</item>
+        <item>\"The secret of getting ahead is getting started.\"</item>
+        <item>\"It always seems impossible until it\'s done.\"</item>
+        <item>\"Everything you\'ve ever wanted is on the other side of fear.\"</item>
+        <item>\"Opportunities don\'t happen. You create them.\"</item>
+        <item>\"Don\'t be pushed around by the fears in your mind. Be led by the dreams in your heart.\"</item>
+        <item>\"Great things are not done by impulse, but by a series of small things brought together.\"</item>
+        <item>\"Small steps lead to big results.\"</item>
+        <item>\"Reflection is the mirror of clarity.\"</item>
+        <item>\"Focus on the good.\"</item>
+        <item>\"Your potential is endless.\"</item>
+        <item>\"Action is the foundational key to all success.\"</item>
+        <item>\"Character is how you treat those who can do nothing for you.\"</item>
+        <item>\"Peace begins with a smile.\"</item>
+        <item>\"Kindness is a language which the deaf can hear and the blind can see.\"</item>
+        <item>\"You are never too old to set another goal or to dream a new dream.\"</item>
+        <item>\"Start where you are. Use what you have. Do what you can.\"</item>
+        <item>\"Keep your face always toward the sunshine—and shadows will fall behind you.\"</item>
+        <item>\"Success usually comes to those who are too busy to be looking for it.\"</item>
+        <item>\"The only limit to our realization of tomorrow will be our doubts of today.\"</item>
+        <item>\"Do not wait to strike till the iron is hot; but make it hot by striking.\"</item>
+        <item>\"A goal is a dream with a deadline.\"</item>
+        <item>\"Growth and comfort do not coexist.\"</item>
+        <item>\"Energy and persistence conquer all things.\"</item>
+        <item>\"Difficulties in life are intended to make us better, not bitter.\"</item>
+        <item>\"It\'s not whether you get knocked down, it\'s whether you get up.\"</item>
+        <item>\"A winner is a dreamer who never gives up.\"</item>
+        <item>\"Quality is not an act, it is a habit.\"</item>
+        <item>\"Happiness is not something readymade. It comes from your own actions.\"</item>
+        <item>\"Magic is believing in yourself.\"</item>
+        <item>\"The best way to predict your future is to create it.\"</item>
+        <item>\"Don\'t count the days, make the days count.\"</item>
+        <item>\"Either you run the day or the day runs you.\"</item>
+        <item>\"Turn your wounds into wisdom.\"</item>
+        <item>\"If you want to lift yourself up, lift up someone else.\"</item>
+        <item>\"Your life does not get better by chance, it gets better by change.\"</item>
+        <item>\"What you do today can improve all your tomorrows.\"</item>
+        <item>\"Discipline is the bridge between goals and accomplishment.\"</item>
+        <item>\"The power of imagination makes us infinite.\"</item>
+        <item>\"Try to be a rainbow in someone else\'s cloud.\"</item>
+        <item>\"Courage is being scared to death, but saddling up anyway.\"</item>
+        <item>\"I find that the harder I work, the more luck I seem to have.\"</item>
+        <item>\"Success is walking from failure to failure with no loss of enthusiasm.\"</item>
+        <item>\"The mind is everything. What you think you become.\"</item>
+        <item>\"Do one thing every day that scares you.\"</item>
+        <item>\"Innovation distinguishes between a leader and a follower.\"</item>
+        <item>\"Be yourself; everyone else is already taken.\"</item>
+        <item>\"Stay hungry, stay foolish.\"</item>
+        <item>\"The purpose of our lives is to be happy.\"</item>
+        <item>\"Life is what happens when you\'re busy making other plans.\"</item>
+        <item>\"Get busy living or get busy dying.\"</item>
+        <item>\"You only live once, but if you do it right, once is enough.\"</item>
+        <item>\"The way to get started is to quit talking and begin doing.\"</item>
+        <item>\"Your work is going to fill a large part of your life.\"</item>
+        <item>\"Life is either a daring adventure or nothing at all.\"</item>
+        <item>\"Go confidently in the direction of your dreams.\"</item>
+        <item>\"In the end, it\'s not the years in your life that count.\"</item>
+        <item>\"Never let the fear of striking out keep you from playing the game.\"</item>
+        <item>\"Money and success don\'t change people; they only amplify what is already there.\"</item>
+        <item>\"Your time is limited, so don\'t waste it.\"</item>
+        <item>\"Not how long, but how well you have lived is the main thing.\"</item>
+        <item>\"The whole secret of a successful life is to find out what is one\'s destiny to do.\"</item>
+        <item>\"In order to write about life first you must live it.\"</item>
+        <item>\"Life is not a problem to be solved, but a reality to be experienced.\"</item>
+        <item>\"Watch your thoughts; they become words.\"</item>
+        <item>\"Watch your words; they become actions.\"</item>
+        <item>\"Watch your actions; they become habits.\"</item>
+        <item>\"Watch your habits; they become character.\"</item>
+        <item>\"Character is destiny.\"</item>
+        <item>\"Self-mastery is the ultimate victory.\"</item>
+        <item>\"The unexamined life is not worth living.\"</item>
+        <item>\"Quiet the mind, and the soul will speak.\"</item>
+        <item>\"Simplicity is the ultimate sophistication.\"</item>
+        <item>\"The obstacle is the way.\"</item>
+        <item>\"Breathe. It\'s just a bad day, not a bad life.\"</item>
+        <item>\"Stay close to anything that makes you glad you are alive.\"</item>
+        <item>\"Be the change you wish to see in the world.\"</item>
+        <item>\"Every strike brings me closer to the next home run.\"</item>
+        <item>\"I attribute my success to this: I never gave or took any excuse.\"</item>
+        <item>\"The most difficult thing is the decision to act.\"</item>
+        <item>\"Definiteness of purpose is the starting point of all achievement.\"</item>
+        <item>\"We become what we think about.\"</item>
+        <item>\"The mind is its own place, and in itself can make a heaven of hell.\"</item>
+        <item>\"Nothing is impossible, the word itself says \'I\'m possible\'!\"</item>
+        <item>\"I have not failed. I\'ve just found 10,000 ways that won\'t work.\"</item>
+        <item>\"A person who never made a mistake never tried anything new.\"</item>
+        <item>\"Dream big and dare to fail.\"</item>
+        <item>\"What you get by achieving your goals is not as important as what you become.\"</item>
+        <item>\"It does not matter how slowly you go as long as you do not stop.\"</item>
+        <item>\"The best revenge is massive success.\"</item>
+        <item>\"Everything has beauty, but not everyone sees it.\"</item>
+        <item>\"If the wind will not serve, take to the oars.\"</item>
+        <item>\"Perfection is not attainable, but if we chase perfection we can catch excellence.\"</item>
+        <item>\"I would rather die of passion than of boredom.\"</item>
+        <item>\"Productivity is never an accident.\"</item>
+        <item>\"Make each day your masterpiece.\"</item>
+        <item>\"Wisdom begins in wonder.\"</item>
+        <item>\"The only journey is the one within.\"</item>
+        <item>\"You must be the change you wish to see.\"</item>
+        <item>\"Integrity is doing the right thing, even when no one is watching.\"</item>
+        <item>\"Well done is better than well said.\"</item>
+        <item>\"The only true wisdom is in knowing you know nothing.\"</item>
+        <item>\"Act as if what you do makes a difference. It does.\"</item>
+        <item>\"To be the best, you must be able to handle the worst.\"</item>
+        <item>\"Everything you can imagine is real.\"</item>
+        <item>\"The beginning is the most important part of the work.\"</item>
+        <item>\"Silence is a source of great strength.\"</item>
+        <item>\"A soft answer turneth away wrath.\"</item>
+        <item>\"He who has a why to live can bear almost any how.\"</item>
+        <item>\"In the middle of every difficulty lies opportunity.\"</item>
+        <item>\"Love the life you live. Live the life you love.\"</item>
+        <item>\"The standard you walk past is the standard you accept.\"</item>
+        <item>\"Do what is right, not what is easy.\"</item>
+        <item>\"To live is the rarest thing in the world.\"</item>
+        <item>\"Keep your eyes on the stars, and your feet on the ground.\"</item>
+        <item>\"Success is the sum of small efforts.\"</item>
+        <item>\"The greatest glory in living lies not in never falling.\"</item>
+        <item>\"The journey of a thousand miles begins with one step.\"</item>
+        <item>\"You must do the things you think you cannot do.\"</item>
+        <item>\"If you think you can, you can.\"</item>
+        <item>\"The only thing we have to fear is fear itself.\"</item>
+        <item>\"Life is short, and it\'s up to you to make it sweet.\"</item>
+        <item>\"What we think, we become.\"</item>
+        <item>\"All our dreams can come true if we have the courage to pursue them.\"</item>
+        <item>\"Life is 10% what happens to us and 90% how we react to it.\"</item>
+        <item>\"There is no substitute for hard work.\"</item>
+        <item>\"Don\'t wait. The time will never be just right.\"</item>
+        <item>\"Whatever you are, be a good one.\"</item>
+        <item>\"If you change the way you look at things, the things you look at change.\"</item>
+        <item>\"Change your thoughts and you change your world.\"</item>
+        <item>\"The only person you are destined to become is the person you decide to be.\"</item>
+        <item>\"Be not afraid of greatness.\"</item>
+        <item>\"The heart has its reasons which reason knows nothing of.\"</item>
+        <item>\"Keep calm and carry on.\"</item>
+        <item>\"Live as if you were to die tomorrow.\"</item>
+        <item>\"The best thing to hold onto in life is each other.\"</item>
+        <item>\"Tough times never last, but tough people do.\"</item>
+        <item>\"Focus on being productive instead of busy.\"</item>
+        <item>\"The best preparation for tomorrow is doing your best today.\"</item>
+        <item>\"Don\'t stop when you\'re tired. Stop when you\'re done.\"</item>
+        <item>\"A day without laughter is a day wasted.\"</item>
+        <item>\"Life is a journey, not a destination.\"</item>
+        <item>\"Believe in yourself.\"</item>
+        <item>\"Your limitation—it\'s only your imagination.\"</item>
+        <item>\"Push yourself, because no one else is going to do it for you.\"</item>
+        <item>\"Sometimes later becomes never. Do it now.\"</item>
+        <item>\"Great things never come from comfort zones.\"</item>
+        <item>\"Dream it. Wish it. Do it.\"</item>
+        <item>\"Success doesn’t just find you. You have to go out and get it.\"</item>
+        <item>\"Wake up with determination. Go to bed with satisfaction.\"</item>
+        <item>\"Do something today that your future self will thank you for.\"</item>
+        <item>\"Little things make big days.\"</item>
+        <item>\"It’s going to be hard, but hard does not mean impossible.\"</item>
+        <item>\"Don’t wait for opportunity. Create it.\"</item>
+        <item>\"Sometimes we’re tested not to show our weaknesses, but to discover our strengths.\"</item>
+        <item>\"The key to success is to focus on goals, not obstacles.\"</item>
+        <item>\"Dream big, pray bigger.\"</item>
+        <item>\"Don’t give up. The beginning is always the hardest.\"</item>
+        <item>\"Success is what happens after you have survived all of your mistakes.\"</item>
+        <item>\"Work hard in silence, let your success be your noise.\"</item>
+        <item>\"Don’t be the same, be better.\"</item>
+        <item>\"Every day is a second chance.\"</item>
+        <item>\"It is not the length of life, but the depth of life.\"</item>
+        <item>\"Live the life you’ve imagined.\"</item>
+        <item>\"Everything you need is already inside you.\"</item>
+        <item>\"The secret of your future is hidden in your daily routine.\"</item>
+        <item>\"Believe in the power of yet.\"</item>
+        <item>\"You are your only limit.\"</item>
+        <item>\"Focus on the step in front of you, not the whole staircase.\"</item>
+        <item>\"Start each day with a grateful heart.\"</item>
+        <item>\"The harder you work for something, the greater you’ll feel when you achieve it.\"</item>
+        <item>\"Don\'t wish for it. Work for it.\"</item>
+        <item>\"Self-discipline is self-love.\"</item>
+        <item>\"Your only competition is the person you were yesterday.\"</item>
+        <item>\"The sun is new each day.\"</item>
+        <item>\"Patience is the companion of wisdom.\"</item>
+        <item>\"Great acts are made up of small deeds.\"</item>
+        <item>\"Consistency is the key.\"</item>
+        <item>\"Don\'t tell people your dreams. Show them.\"</item>
+        <item>\"The only way to predict the future is to create it.\"</item>
+        <item>\"Don\'t look back. You\'re not going that way.\"</item>
+        <item>\"Confidence is silent. Insecurities are loud.\"</item>
+        <item>\"Focus on your soul, not on your role.\"</item>
+        <item>\"Do it with passion or not at all.\"</item>
+        <item>\"Stay humble. Stay original.\"</item>
+        <item>\"If it matters to you, you\'ll find a way.\"</item>
+        <item>\"Be your own kind of beautiful.\"</item>
+        <item>\"The more you give, the more you have.\"</item>
+        <item>\"You get what you give.\"</item>
+        <item>\"Think positive and positive things will happen.\"</item>
+        <item>\"Life is a gift. Wake up every day and realize it.\"</item>
+        <item>\"Be happy with what you have while working for what you want.\"</item>
+        <item>\"Comparison is the thief of joy.\"</item>
+        <item>\"Today is a perfect day to start.\"</item>
+        <item>\"Happiness is a choice.\"</item>
+        <item>\"Your vibration attracts your tribe.\"</item>
+        <item>\"Mindset is everything.\"</item>
+        <item>\"Do it for you.\"</item>
+        <item>\"Make it happen.\"</item>
+        <item>\"Choose kind.\"</item>
+        <item>\"Radiate positivity.\"</item>
+        <item>\"Dream without fear. Love without limits.\"</item>
+        <item>\"Collect moments, not things.\"</item>
+        <item>\"Enjoy the little things.\"</item>
+        <item>\"Everything happens for a reason.\"</item>
+        <item>\"Be the light.\"</item>
+        <item>\"Grow through what you go through.\"</item>
+        <item>\"Life is tough, but so are you.\"</item>
+        <item>\"Choose happy.\"</item>
+        <item>\"Stay curious.\"</item>
+        <item>\"Less is more.\"</item>
+        <item>\"One day at a time.\"</item>
+        <item>\"Keep on keeping on.\"</item>
+        <item>\"Be a voice, not an echo.\"</item>
+        <item>\"Focus on your goals.\"</item>
+        <item>\"You are enough.\"</item>
+        <item>\"Believe in your inner magic.\"</item>
+        <item>\"Find joy in the journey.\"</item>
+        <item>\"Grateful for today.\"</item>
+        <item>\"The best is yet to come.\"</item>
+        <item>\"Trust the process.\"</item>
+        <item>\"Keep shining.\"</item>
+        <item>\"Make today amazing.\"</item>
+        <item>\"Every moment matters.\"</item>
+        <item>\"Do your best.\"</item>
+        <item>\"Stay focused.\"</item>
+        <item>\"Love yourself first.\"</item>
+        <item>\"Believe in miracles.\"</item>
+        <item>\"Be bold. Be brave.\"</item>
+        <item>\"The world is yours.\"</item>
+        <item>\"Just keep swimming.\"</item>
+        <item>\"Seize the day.\"</item>
+        <item>\"Listen to your heart.\"</item>
+        <item>\"Follow your dreams.\"</item>
+        <item>\"Stay wild.\"</item>
+        <item>\"Choose love.\"</item>
+        <item>\"Focus on yourself.\"</item>
+        <item>\"Be kind to yourself.\"</item>
+        <item>\"Spread your wings.\"</item>
+        <item>\"The sky is the limit.\"</item>
+        <item>\"Never give up.\"</item>
+        <item>\"Keep the faith.\"</item>
+        <item>\"Dream big.\"</item>
+        <item>\"Be fearless.\"</item>
+        <item>\"Stay strong.\"</item>
+        <item>\"Work hard.\"</item>
+        <item>\"Peace and love.\"</item>
+        <item>\"Good vibes only.\"</item>
+        <item>\"Make it simple.\"</item>
+        <item>\"Live. Love. Laugh.\"</item>
+        <item>\"Focus on the now.\"</item>
+        <item>\"Life is beautiful.\"</item>
+        <item>\"Be present.\"</item>
+        <item>\"Stay positive.\"</item>
+        <item>\"You got this.\"</item>
+        <item>\"Go for it.\"</item>
+        <item>\"Start now.\"</item>
+        <item>\"Be grateful.\"</item>
+        <item>\"Trust yourself.\"</item>
+        <item>\"Kindness matters.\"</item>
+        <item>\"Mindfulness matters.\"</item>
+        <item>\"Stay humble.\"</item>
+        <item>\"Dream on.\"</item>
+        <item>\"Love life.\"</item>
+        <item>\"Be true.\"</item>
+        <item>\"You are brave.\"</item>
+        <item>\"Stay gold.\"</item>
+        <item>\"Keep moving.\"</item>
+        <item>\"Believe in you.\"</item>
+        <item>\"Be amazing.\"</item>
+        <item>\"Sparkle on.\"</item>
+        <item>\"Just breathe.\"</item>
+        <item>\"Love wins.\"</item>
+        <item>\"Hope is power.\"</item>
+        <item>\"Make it count.\"</item>
+        <item>\"Be extraordinary.\"</item>
+        <item>\"Focus on progress.\"</item>
+        <item>\"Keep it real.\"</item>
+        <item>\"You are strong.\"</item>
+        <item>\"Stay inspired.\"</item>
+        <item>\"Think big.\"</item>
+        <item>\"Be patient.\"</item>
+        <item>\"Find your fire.\"</item>
+        <item>\"Stay happy.\"</item>
+        <item>\"Live your truth.\"</item>
+        <item>\"Own your story.\"</item>
+        <item>\"Be the energy.\"</item>
+        <item>\"Focus on peace.\"</item>
+        <item>\"You are worthy.\"</item>
+        <item>\"Keep exploring.\"</item>
+        <item>\"Stay balanced.\"</item>
+        <item>\"Choose wisdom.\"</item>
+        <item>\"Be the change.\"</item>
+        <item>\"Find your balance.\"</item>
+        <item>\"Stay grounded.\"</item>
+        <item>\"Trust the timing.\"</item>
+        <item>\"Believe in tomorrow.\"</item>
+        <item>\"Keep your spark.\"</item>
+        <item>\"Be the miracle.\"</item>
+        <item>\"Focus on growth.\"</item>
+        <item>\"Live with purpose.\"</item>
+        <item>\"You are rare.\"</item>
+        <item>\"Stay authentic.\"</item>
+        <item>\"Follow your light.\"</item>
+        <item>\"Be the reason.\"</item>
+        <item>\"Keep growing.\"</item>
+        <item>\"Stay mindful.\"</item>
+        <item>\"Believe in magic.\"</item>
+        <item>\"Make waves.\"</item>
+        <item>\"Be the soul.\"</item>
+        <item>\"Focus on vision.\"</item>
+        <item>\"You are unique.\"</item>
+        <item>\"Stay true.\"</item>
+        <item>\"Keep climbing.\"</item>
+        <item>\"Stay brave.\"</item>
+        <item>\"Follow your bliss.\"</item>
+        <item>\"Be the dream.\"</item>
+        <item>\"Focus on joy.\"</item>
+        <item>\"You are powerful.\"</item>
+        <item>\"Stay kind.\"</item>
+        <item>\"Keep reaching.\"</item>
+        <item>\"Stay radiant.\"</item>
+        <item>\"Choose grace.\"</item>
+        <item>\"Be the silence.\"</item>
+        <item>\"Focus on heart.\"</item>
+        <item>\"You are enough.\"</item>
+        <item>\"Stay bright.\"</item>
+        <item>\"Keep dreaming.\"</item>
+        <item>\"Stay limitless.\"</item>
+        <item>\"Follow your path.\"</item>
+        <item>\"Be the love.\"</item>
+        <item>\"Focus on now.\"</item>
+        <item>\"You are light.\"</item>
+        <item>\"Stay magic.\"</item>
+        <item>\"Keep thriving.\"</item>
+    </string-array>
 </resources>
