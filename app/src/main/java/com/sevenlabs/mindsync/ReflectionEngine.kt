@@ -1,7 +1,7 @@
 package com.sevenlabs.mindsync
 
 object ReflectionEngine {
-    private val disclaimer = "\n\n*Note: The AI Insights are for personal reflection only and may not always accurately capture your emotional state."
+    private val disclaimer = "\n\nNote: The AI Insights are for personal reflection only and may not always accurately capture your emotional state."
 
     private val pools = mapOf(
         "Admiration" to listOf(
