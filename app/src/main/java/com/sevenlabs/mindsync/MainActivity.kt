@@ -101,6 +101,15 @@ fun JournalScreen() {
     val entries by journalDao.getAllEntries().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
 
+    val classifier = remember {
+        try {
+            EmotionClassifierHelper(context)
+        } catch (e: Exception) {
+            android.util.Log.e("MindSyncAI", "Failed to init classifier: ${e.message}")
+            null
+        }
+    }
+
     val greeting: String = remember { getGreeting() }
     val dailyQuote: String = remember { getDailyQuote(context) }
     val timelineDays = remember { getPastTimelineDays() }
@@ -119,6 +128,12 @@ fun JournalScreen() {
 
     val pagerState = rememberPagerState(pageCount = { timelineDays.size })
     val calendarListState = rememberLazyListState()
+
+    DisposableEffect(Unit) {
+        onDispose {
+            classifier?.close()
+        }
+    }
 
     LaunchedEffect(pagerState.currentPage) {
         if (timelineDays.isNotEmpty()) {
@@ -265,7 +280,11 @@ fun JournalScreen() {
                                             scope.launch {
                                                 val date = SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault()).format(Date())
                                                 val time = SimpleDateFormat("hh:mm:ss a", Locale.getDefault()).format(Date())
-                                                journalDao.insertEntry(JournalEntry(date = date, time = time, content = entryText, aiInsight = "Analyzing your reflection..."))
+
+                                                val detectedEmotion = classifier?.classify(entryText) ?: "Thoughtful"
+                                                val instantInsight = "You are reflecting with a sense of $detectedEmotion."
+
+                                                journalDao.insertEntry(JournalEntry(date = date, time = time, content = entryText, aiInsight = instantInsight))
                                                 entryText = ""; prefs.edit().remove("draft_entry").apply()
                                                 focusManager.clearFocus(); showSuccessDialog = true
                                             }
@@ -346,10 +365,16 @@ fun JournalScreen() {
                                         val entryForPage = entries.find { it.date.contains(dateForPage) }
 
                                         if (entryForPage != null) {
-                                            PreviousEntryCard(entry = entryForPage, onDelete = {
-                                                entryToDelete = entryForPage
-                                                showDeleteConfirm = true
-                                            })
+                                            PreviousEntryCard(
+                                                entry = entryForPage,
+                                                onDelete = {
+                                                    entryToDelete = entryForPage
+                                                    showDeleteConfirm = true
+                                                },
+                                                onDeepReflection = {
+                                                    android.util.Log.d("MindSyncAI", "Deep Reflection triggered for: ${entryForPage.id}")
+                                                }
+                                            )
                                         } else {
                                             Column(
                                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -383,7 +408,7 @@ fun JournalScreen() {
 }
 
 @Composable
-fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit) {
+fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit, onDeepReflection: () -> Unit) {
     val scrollTrap = remember {
         object : NestedScrollConnection {
             override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
@@ -415,6 +440,17 @@ fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit) {
                             Text(insight, fontSize = 13.sp, color = SlateText.copy(alpha = 0.8f), lineHeight = 18.sp)
                         }
                     }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(
+                    onClick = onDeepReflection,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, MindSyncBlue.copy(alpha = 0.3f))
+                ) {
+                    Icon(Icons.Default.Psychology, null, tint = MindSyncBlue, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Deep Reflection", color = MindSyncBlue)
                 }
             }
         }

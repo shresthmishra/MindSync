@@ -1,10 +1,20 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.devtools.ksp")
+    alias(libs.plugins.ksp)
+}
+
+configurations.all {
+    exclude(group = "com.google.ai.edge.litert", module = "litert-api")
 }
 
 android {
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
     namespace = "com.sevenlabs.mindsync"
     compileSdk = 36
 
@@ -35,7 +45,6 @@ android {
     }
 }
 
-
 dependencies {
     implementation(libs.core.ktx)
     implementation(libs.lifecycle.runtime.ktx)
@@ -45,15 +54,15 @@ dependencies {
     implementation(libs.ui.graphics)
     implementation(libs.ui.tooling.preview)
     implementation(libs.material3)
-
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation("androidx.compose.ui:ui-util:1.7.0")
-
     implementation(libs.room.runtime)
     ksp(libs.room.compiler)
     implementation(libs.room.ktx)
-
     implementation("androidx.compose.material:material-icons-extended:1.7.0")
+
+    implementation("com.google.ai.edge.litert:litert:2.1.3")
+    implementation("com.google.ai.edge.litert:litert-gpu:1.4.2")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
