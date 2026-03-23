@@ -61,6 +61,8 @@ dependencies {
     implementation(libs.room.ktx)
     implementation("androidx.compose.material:material-icons-extended:1.7.0")
 
+    // AI modules
+    implementation("org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0")
     implementation("com.google.ai.edge.litert:litert:2.1.3")
     implementation("com.google.ai.edge.litert:litert-gpu:1.4.2")
 

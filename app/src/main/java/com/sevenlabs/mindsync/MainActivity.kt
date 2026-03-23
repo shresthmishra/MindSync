@@ -281,11 +281,16 @@ fun JournalScreen() {
                                                 val date = SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault()).format(Date())
                                                 val time = SimpleDateFormat("hh:mm:ss a", Locale.getDefault()).format(Date())
 
-                                                val detectedEmotion = classifier?.classify(entryText) ?: "Thoughtful"
-                                                val instantInsight = "You are reflecting with a sense of $detectedEmotion."
+                                                val detectedEmotion = classifier?.classify(entryText) ?: "Neutral"
+                                                val smarterInsight = ReflectionEngine.getReflection(detectedEmotion)
 
-                                                journalDao.insertEntry(JournalEntry(date = date, time = time, content = entryText, aiInsight = instantInsight))
-                                                entryText = ""; prefs.edit().remove("draft_entry").apply()
+                                                journalDao.insertEntry(JournalEntry(
+                                                    date = date,
+                                                    time = time,
+                                                    content = entryText,
+                                                    aiInsight = smarterInsight
+                                                ))
+                                                 entryText = ""; prefs.edit().remove("draft_entry").apply()
                                                 focusManager.clearFocus(); showSuccessDialog = true
                                             }
                                         } else { showEmptyDialog = true }
