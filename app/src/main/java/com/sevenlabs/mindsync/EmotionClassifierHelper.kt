@@ -41,30 +41,34 @@ class EmotionClassifierHelper(private val context: Context) {
 
     fun classify(text: String): String {
         val activeModel = model ?: return "Neutral"
-        try {
+        return try {
             val tokens = tokenize(text)
             val inputBuffers = activeModel.createInputBuffers()
             val outputBuffers = activeModel.createOutputBuffers()
             inputBuffers[0].writeInt(tokens)
             activeModel.run(inputBuffers, outputBuffers)
-            val results = outputBuffers[0].readFloat()
 
+            val results = outputBuffers[0].readFloat()
             val maxIndex = results.indices.maxByOrNull { results[it] } ?: 27
             val topScore = results[maxIndex]
 
-            return if (topScore < confidenceThreshold) {
+            if (topScore < 0.10f) {
                 "Neutral"
             } else {
                 labels[maxIndex].replaceFirstChar { it.uppercase() }
             }
         } catch (e: Exception) {
-            return "Neutral"
+            "Neutral"
         }
     }
 
     private fun tokenize(text: String): IntArray {
         val tokens = IntArray(50) { 0 }
-        val words = text.lowercase().replace(Regex("[^a-z0-9\\s]"), "").trim().split(Regex("\\s+"))
+        val words = text.lowercase()
+            .replace(Regex("[^a-z0-9\\s]"), " ")
+            .trim()
+            .split(Regex("\\s+"))
+
         for (i in 0 until minOf(words.size, 50)) {
             tokens[i] = vocab[words[i]] ?: 1
         }

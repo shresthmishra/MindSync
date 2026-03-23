@@ -155,6 +155,15 @@ object ReflectionEngine {
 
     fun getReflection(emotion: String): String {
         val pool = pools[emotion] ?: pools["Neutral"]!!
-        return pool.random() + disclaimer
+        val coreInsight = pool.random()
+        val dynamicPrefix = when(emotion) {
+            "Anger" -> "It's completely valid to feel this heat right now. "
+            "Joy" -> "It's wonderful to see you in this headspace. "
+            "Sadness" -> "I'm sorry things feel heavy today. "
+            "Neutral" -> "Taking a moment for a steady check-in is a great habit. "
+            else -> "I hear what you're saying, and it's worth looking closer. "
+        }
+
+        return "$dynamicPrefix$coreInsight$disclaimer"
     }
 }
