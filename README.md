@@ -29,17 +29,6 @@ MindSync is a comprehensive, privacy-first Android journaling application that l
   * **Database:** Room Persistence Library
   * **Background Tasks:** WorkManager for daily mindfulness reminders
 
-## Installation & Setup
-
-1.  **Model Placement:** Download the `gemma-2b-it-cpu-int4.bin` model.
-2.  **Deploy:** Place the model file in the application's internal directory: `/data/user/0/com.sevenlabs.mindsync/files/`.
-3.  **Permissions:** Ensure the app has notification permissions enabled for daily reminders.
-
------
-
-\<i\>Thank you for reading, have a great one!\</i\>
-
-
 
 ---
 <i>Thanks for reading, have a good one!</i>
