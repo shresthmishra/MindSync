@@ -60,6 +60,7 @@ dependencies {
     ksp(libs.room.compiler)
     implementation(libs.room.ktx)
     implementation("androidx.compose.material:material-icons-extended:1.7.0")
+    implementation("com.google.mediapipe:tasks-genai:0.10.14")
 
     // AI modules
     implementation("org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0")

@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -15,6 +16,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -64,6 +66,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.absoluteValue
+import java.io.File
 
 val MindSyncBlue = Color(0xFF0369A1)
 val SkyBlueAccent = Color(0xFF0EA5E9)
@@ -101,12 +104,27 @@ fun JournalScreen() {
     val entries by journalDao.getAllEntries().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
 
-    val classifier = remember {
-        try {
-            EmotionClassifierHelper(context)
-        } catch (e: Exception) {
-            android.util.Log.e("MindSyncAI", "Failed to init classifier: ${e.message}")
-            null
+    var classifier by remember { mutableStateOf<EmotionClassifierHelper?>(null) }
+    var deepReflectionHelper by remember { mutableStateOf<DeepReflectionHelper?>(null) }
+
+    // AI Engine Initialisation: Tier 1 (TFLite) & Tier 2 (Gemma)
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                classifier = EmotionClassifierHelper(context)
+            } catch (e: Exception) {
+                android.util.Log.e("MindSyncAI", "Classifier Error: ${e.message}")
+            }
+
+            try {
+                val modelFile = File(context.filesDir, "gemma-2b-it-cpu-int4.bin")
+                if (modelFile.exists() && modelFile.length() > 100_000_000) {
+                    deepReflectionHelper = DeepReflectionHelper(context, modelFile.absolutePath)
+                    Log.d("MindSyncAI", "Gemma successfully initialized")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MindSyncAI", "Gemma Setup Error: ${e.message}")
+            }
         }
     }
 
@@ -123,15 +141,19 @@ fun JournalScreen() {
 
     val isKeyboardVisible = WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
 
+    // UI Effects State: Dynamic blur and alpha based on user focus
     val focusDimAlpha by animateFloatAsState(targetValue = if (isWritingFocused) 0.10f else 1f, label = "dim")
     val focusBlurRadius by animateDpAsState(targetValue = if (isWritingFocused) 14.dp else 0.dp, label = "blur")
 
     val pagerState = rememberPagerState(pageCount = { timelineDays.size })
     val calendarListState = rememberLazyListState()
 
+    // Navigation & Lifecycle: Model cleanup and back-button handling
     DisposableEffect(Unit) {
         onDispose {
             classifier?.close()
+            deepReflectionHelper?.close()
+            deepReflectionHelper = null
         }
     }
 
@@ -324,29 +346,35 @@ fun JournalScreen() {
                                 IconButton(onClick = { scope.launch { verticalListState.animateScrollToItem(0) } }) { Icon(Icons.Default.KeyboardArrowDown, null, tint = MindSyncBlue) }
                                 Text(text = "Journal History", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MindSyncBlue)
                             }
-                            Spacer(modifier = Modifier.height(20.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
-                            LazyRow(state = calendarListState, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            LazyRow(
+                                state = calendarListState,
+                                modifier = Modifier.fillMaxWidth(),
+                                contentPadding = PaddingValues(horizontal = 24.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 items(timelineDays) { dateObj ->
                                     val dateLabel = SimpleDateFormat("MMMM dd", Locale.getDefault()).format(dateObj)
                                     val isSelected = timelineDays[pagerState.currentPage] == dateObj
                                     val isToday = dateLabel == todayLabel
                                     Column(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(14.dp))
+                                            .width(66.dp)
+                                            .clip(RoundedCornerShape(12.dp))
                                             .background(if (isSelected) MindSyncBlue else if (isToday) MindSyncBlue.copy(alpha = 0.1f) else Color.White.copy(alpha = 0.3f))
                                             .clickable { scope.launch { pagerState.animateScrollToPage(timelineDays.indexOf(dateObj)) } }
-                                            .padding(vertical = 10.dp, horizontal = 14.dp),
+                                            .padding(vertical = 0.dp),
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
-                                        Text(text = SimpleDateFormat("MMM", Locale.getDefault()).format(dateObj).uppercase(), color = if (isSelected) Color.White.copy(alpha = 0.7f) else MindSyncBlue.copy(alpha = 0.5f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                        Text(text = SimpleDateFormat("MMM", Locale.getDefault()).format(dateObj).uppercase(), color = if (isSelected) Color.White.copy(alpha = 0.7f) else MindSyncBlue.copy(alpha = 0.5f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
                                         Text(text = SimpleDateFormat("dd", Locale.getDefault()).format(dateObj), color = if (isSelected) Color.White else MindSyncBlue, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
                                         Text(text = if (isToday) "TODAY" else SimpleDateFormat("EEE", Locale.getDefault()).format(dateObj).uppercase(), color = if (isSelected) Color.White.copy(alpha = 0.7f) else MindSyncBlue.copy(alpha = 0.5f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
                                         Text(text = SimpleDateFormat("yyyy", Locale.getDefault()).format(dateObj), color = if (isSelected) Color.White.copy(alpha = 0.5f) else MindSyncBlue.copy(alpha = 0.3f), fontSize = 8.sp)
                                     }
                                 }
                             }
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
                             Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
                                 HorizontalPager(
@@ -362,7 +390,6 @@ fun JournalScreen() {
                                             val scale = lerp(start = 0.9f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
                                             scaleX = scale
                                             scaleY = scale
-
                                             alpha = lerp(start = 0.5f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
                                         }
                                     ) {
@@ -377,12 +404,24 @@ fun JournalScreen() {
                                                     showDeleteConfirm = true
                                                 },
                                                 onDeepReflection = {
-                                                    android.util.Log.d("MindSyncAI", "Deep Reflection triggered for: ${entryForPage.id}")
+                                                    if (deepReflectionHelper != null) {
+                                                        val customInsight = deepReflectionHelper?.generateDeepReflection(entryForPage.content)
+                                                        if (customInsight != null) {
+                                                            journalDao.insertEntry(entryForPage.copy(aiInsight = customInsight))
+                                                            snackbarHostState.showSnackbar("Deep Reflection Updated.")
+                                                        }
+                                                    } else {
+                                                        snackbarHostState.showSnackbar("AI model loading. Please try again.")
+                                                    }
                                                 }
                                             )
                                         } else {
+                                            // Unified height for Empty State to fix irregular swiping behavior
                                             Column(
-                                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(440.dp) // Match PreviousEntryCard height
+                                                    .padding(horizontal = 16.dp),
                                                 horizontalAlignment = Alignment.CenterHorizontally,
                                                 verticalArrangement = Arrangement.Center
                                             ) {
@@ -413,7 +452,10 @@ fun JournalScreen() {
 }
 
 @Composable
-fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit, onDeepReflection: () -> Unit) {
+fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit, onDeepReflection: suspend () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var isThinking by remember { mutableStateOf(false) }
+
     val scrollTrap = remember {
         object : NestedScrollConnection {
             override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
@@ -421,7 +463,8 @@ fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit, onDeepReflectio
             }
         }
     }
-    Card(shape = RoundedCornerShape(32.dp), colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp), modifier = Modifier.fillMaxWidth().height(360.dp)) {
+
+    Card(shape = RoundedCornerShape(32.dp), colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp), modifier = Modifier.fillMaxWidth().height(440.dp)) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                 Column {
@@ -432,30 +475,61 @@ fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit, onDeepReflectio
             }
             Column(modifier = Modifier.fillMaxSize().nestedScroll(scrollTrap).padding(start = 24.dp, end = 24.dp, bottom = 24.dp).verticalScroll(rememberScrollState())) {
                 Text(text = entry.content, color = SlateText, fontSize = 16.sp, lineHeight = 22.sp)
-                entry.aiInsight?.let { insight ->
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = InsightBg), border = BorderStroke(1.dp, MindSyncBlue.copy(alpha = 0.1f))) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.AutoAwesome, null, tint = MindSyncBlue, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("AI Insights", color = MindSyncBlue, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+
+                AnimatedVisibility(
+                    visible = entry.aiInsight != null,
+                    enter = fadeIn(animationSpec = tween(600)) + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    entry.aiInsight?.let { insight ->
+                        Column {
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = CardDefaults.cardColors(containerColor = InsightBg),
+                                border = BorderStroke(1.dp, MindSyncBlue.copy(alpha = 0.1f))
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.AutoAwesome, null, tint = MindSyncBlue, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("AI Insights", color = MindSyncBlue, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Crossfade(targetState = insight, animationSpec = tween(500), label = "insight_text") { text ->
+                                        Text(text, fontSize = 13.sp, color = SlateText.copy(alpha = 0.8f), lineHeight = 18.sp)
+                                    }
+                                }
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(insight, fontSize = 13.sp, color = SlateText.copy(alpha = 0.8f), lineHeight = 18.sp)
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+
+                Spacer(modifier = Modifier.height(24.dp))
                 OutlinedButton(
-                    onClick = onDeepReflection,
+                    onClick = {
+                        if (!isThinking) {
+                            scope.launch {
+                                isThinking = true
+                                onDeepReflection()
+                                isThinking = false
+                            }
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     border = BorderStroke(1.dp, MindSyncBlue.copy(alpha = 0.3f))
                 ) {
-                    Icon(Icons.Default.Psychology, null, tint = MindSyncBlue, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Deep Reflection", color = MindSyncBlue)
+                    if (isThinking) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MindSyncBlue, strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Gemma is thinking...", color = MindSyncBlue)
+                    } else {
+                        Icon(Icons.Default.Psychology, null, tint = MindSyncBlue, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Deep Reflection", color = MindSyncBlue)
+                    }
                 }
             }
         }
