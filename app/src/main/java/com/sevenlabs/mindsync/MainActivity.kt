@@ -49,8 +49,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -107,7 +109,6 @@ fun JournalScreen() {
     var classifier by remember { mutableStateOf<EmotionClassifierHelper?>(null) }
     var deepReflectionHelper by remember { mutableStateOf<DeepReflectionHelper?>(null) }
 
-    // AI Engine Initialisation: Tier 1 (TFLite) & Tier 2 (Gemma)
     LaunchedEffect(Unit) {
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             try {
@@ -141,14 +142,12 @@ fun JournalScreen() {
 
     val isKeyboardVisible = WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
 
-    // UI Effects State: Dynamic blur and alpha based on user focus
     val focusDimAlpha by animateFloatAsState(targetValue = if (isWritingFocused) 0.10f else 1f, label = "dim")
     val focusBlurRadius by animateDpAsState(targetValue = if (isWritingFocused) 14.dp else 0.dp, label = "blur")
 
-    val pagerState = rememberPagerState(pageCount = { timelineDays.size })
+    val pagerState = rememberPagerState(pageCount = { entries.size })
     val calendarListState = rememberLazyListState()
 
-    // Navigation & Lifecycle: Model cleanup and back-button handling
     DisposableEffect(Unit) {
         onDispose {
             classifier?.close()
@@ -158,8 +157,15 @@ fun JournalScreen() {
     }
 
     LaunchedEffect(pagerState.currentPage) {
-        if (timelineDays.isNotEmpty()) {
-            calendarListState.animateScrollToItem(pagerState.currentPage)
+        if (entries.isNotEmpty()) {
+            val currentEntry = entries[pagerState.currentPage]
+            val entryDate = SimpleDateFormat("MMMM dd", Locale.getDefault()).format(
+                SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault()).parse(currentEntry.date) ?: Date()
+            )
+            val calIndex = timelineDays.indexOfFirst {
+                SimpleDateFormat("MMMM dd", Locale.getDefault()).format(it) == entryDate
+            }
+            if (calIndex != -1) calendarListState.animateScrollToItem(calIndex)
         }
     }
 
@@ -345,103 +351,119 @@ fun JournalScreen() {
                             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(onClick = { scope.launch { verticalListState.animateScrollToItem(0) } }) { Icon(Icons.Default.KeyboardArrowDown, null, tint = MindSyncBlue) }
                                 Text(text = "Journal History", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MindSyncBlue)
+                                Spacer(modifier = Modifier.weight(1f))
+
+                                AnimatedVisibility(
+                                    visible = pagerState.currentPage >= 2,
+                                    enter = fadeIn() + scaleIn(),
+                                    exit = fadeOut() + scaleOut()
+                                ) {
+                                    IconButton(onClick = { scope.launch { pagerState.animateScrollToPage(0) } }) {
+                                        Icon(Icons.Default.Today, "Jump to Today", tint = MindSyncBlue)
+                                    }
+                                }
                             }
-                            Spacer(modifier = Modifier.height(14.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
                             LazyRow(
                                 state = calendarListState,
                                 modifier = Modifier.fillMaxWidth(),
                                 contentPadding = PaddingValues(horizontal = 24.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
                                 items(timelineDays) { dateObj ->
                                     val dateLabel = SimpleDateFormat("MMMM dd", Locale.getDefault()).format(dateObj)
-                                    val isSelected = timelineDays[pagerState.currentPage] == dateObj
                                     val isToday = dateLabel == todayLabel
-                                    Column(
+                                    val currentEntryDate = if (entries.isNotEmpty() && pagerState.currentPage < entries.size) {
+                                        SimpleDateFormat("MMMM dd", Locale.getDefault()).format(
+                                            SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault()).parse(entries[pagerState.currentPage].date) ?: Date()
+                                        )
+                                    } else null
+
+                                    val isSelected = currentEntryDate == dateLabel
+                                    val hasEntries = entries.any { it.date.contains(dateLabel) }
+
+                                    Box(
                                         modifier = Modifier
-                                            .width(66.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(if (isSelected) MindSyncBlue else if (isToday) MindSyncBlue.copy(alpha = 0.1f) else Color.White.copy(alpha = 0.3f))
-                                            .clickable { scope.launch { pagerState.animateScrollToPage(timelineDays.indexOf(dateObj)) } }
-                                            .padding(vertical = 0.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally
+                                            .width(68.dp)
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .background(
+                                                when {
+                                                    isSelected -> MindSyncBlue
+                                                    isToday -> MindSyncBlue.copy(alpha = 0.15f)
+                                                    hasEntries -> SkyBlueAccent.copy(alpha = 0.25f)
+                                                    else -> Color.White.copy(alpha = 0.3f)
+                                                }
+                                            )
+                                            .clickable {
+                                                scope.launch {
+                                                    val entryIndex = entries.indexOfFirst { it.date.contains(dateLabel) }
+                                                    if (entryIndex != -1) pagerState.animateScrollToPage(entryIndex)
+                                                }
+                                            }
+                                            .padding(vertical = 8.dp, horizontal = 4.dp)
                                     ) {
-                                        Text(text = SimpleDateFormat("MMM", Locale.getDefault()).format(dateObj).uppercase(), color = if (isSelected) Color.White.copy(alpha = 0.7f) else MindSyncBlue.copy(alpha = 0.5f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                        Text(text = SimpleDateFormat("dd", Locale.getDefault()).format(dateObj), color = if (isSelected) Color.White else MindSyncBlue, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
-                                        Text(text = if (isToday) "TODAY" else SimpleDateFormat("EEE", Locale.getDefault()).format(dateObj).uppercase(), color = if (isSelected) Color.White.copy(alpha = 0.7f) else MindSyncBlue.copy(alpha = 0.5f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                        Text(text = SimpleDateFormat("yyyy", Locale.getDefault()).format(dateObj), color = if (isSelected) Color.White.copy(alpha = 0.5f) else MindSyncBlue.copy(alpha = 0.3f), fontSize = 8.sp)
+                                        if (isToday) {
+                                            Icon(
+                                                Icons.Default.Star, null,
+                                                tint = if (isSelected) Color.White else MindSyncBlue,
+                                                modifier = Modifier.size(10.dp).align(Alignment.TopStart).offset(x = 6.dp)
+                                            )
+                                        }
+                                        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(text = SimpleDateFormat("MMM", Locale.getDefault()).format(dateObj).uppercase(), color = if (isSelected) Color.White.copy(alpha = 0.7f) else MindSyncBlue.copy(alpha = 0.5f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                            Text(text = SimpleDateFormat("dd", Locale.getDefault()).format(dateObj), color = if (isSelected) Color.White else MindSyncBlue, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
+                                            Text(text = SimpleDateFormat("EEE", Locale.getDefault()).format(dateObj).uppercase(), color = if (isSelected) Color.White.copy(alpha = 0.7f) else MindSyncBlue.copy(alpha = 0.5f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                            Text(text = SimpleDateFormat("yyyy", Locale.getDefault()).format(dateObj), color = if (isSelected) Color.White.copy(alpha = 0.5f) else MindSyncBlue.copy(alpha = 0.3f), fontSize = 7.sp)
+                                        }
                                     }
                                 }
                             }
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(20.dp))
 
                             Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                                HorizontalPager(
-                                    state = pagerState,
-                                    contentPadding = PaddingValues(horizontal = 32.dp),
-                                    pageSpacing = 16.dp,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) { page ->
-                                    val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
+                                if (entries.isNotEmpty()) {
+                                    HorizontalPager(
+                                        state = pagerState,
+                                        contentPadding = PaddingValues(horizontal = 42.dp),
+                                        pageSpacing = 16.dp,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) { page ->
+                                        val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
+                                        val entry = entries[page]
 
-                                    Box(
-                                        modifier = Modifier.graphicsLayer {
-                                            val scale = lerp(start = 0.9f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
-                                            scaleX = scale
-                                            scaleY = scale
-                                            alpha = lerp(start = 0.5f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
-                                        }
-                                    ) {
-                                        val dateForPage = SimpleDateFormat("MMMM dd", Locale.getDefault()).format(timelineDays[page])
-                                        val entryForPage = entries.find { it.date.contains(dateForPage) }
-
-                                        if (entryForPage != null) {
+                                        Box(
+                                            modifier = Modifier.graphicsLayer {
+                                                val scale = lerp(start = 0.9f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
+                                                scaleX = scale
+                                                scaleY = scale
+                                                alpha = lerp(start = 0.5f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
+                                            }
+                                        ) {
                                             PreviousEntryCard(
-                                                entry = entryForPage,
+                                                entry = entry,
                                                 onDelete = {
-                                                    entryToDelete = entryForPage
+                                                    entryToDelete = entry
                                                     showDeleteConfirm = true
                                                 },
                                                 onDeepReflection = {
                                                     if (deepReflectionHelper != null) {
-                                                        val customInsight = deepReflectionHelper?.generateDeepReflection(entryForPage.content)
+                                                        val customInsight = deepReflectionHelper?.generateDeepReflection(entry.content)
                                                         if (customInsight != null) {
-                                                            journalDao.insertEntry(entryForPage.copy(aiInsight = customInsight))
-                                                            snackbarHostState.showSnackbar("Deep Reflection Updated.")
+                                                            journalDao.insertEntry(entry.copy(aiInsight = customInsight))
+                                                            snackbarHostState.showSnackbar("Deep Reflection now available!")
                                                         }
                                                     } else {
-                                                        snackbarHostState.showSnackbar("AI model loading. Please try again.")
+                                                        snackbarHostState.showSnackbar("AI model loading. Please try in a bit.")
                                                     }
                                                 }
                                             )
-                                        } else {
-                                            // Unified height for Empty State to fix irregular swiping behavior
-                                            Column(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .height(440.dp) // Match PreviousEntryCard height
-                                                    .padding(horizontal = 16.dp),
-                                                horizontalAlignment = Alignment.CenterHorizontally,
-                                                verticalArrangement = Arrangement.Center
-                                            ) {
-                                                Icon(Icons.Default.Info, null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(44.dp))
-                                                Spacer(Modifier.height(16.dp))
-                                                Text("No entry for this day", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, textAlign = TextAlign.Center)
-                                                Spacer(Modifier.height(24.dp))
-                                                Button(
-                                                    onClick = { if (dateForPage == todayLabel) { scope.launch { verticalListState.animateScrollToItem(0) } } else { scope.launch { pagerState.animateScrollToPage(0) } } },
-                                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = MindSyncBlue),
-                                                    shape = RoundedCornerShape(16.dp),
-                                                    modifier = Modifier.height(50.dp)
-                                                ) { Text(if (dateForPage == todayLabel) "Write an entry" else "Jump to Today", fontWeight = FontWeight.ExtraBold) }
-                                            }
                                         }
                                     }
                                 }
                             }
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text(text = "Looking back at the progress", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f), fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                            Text(text = "Scroll sideways for your history", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f), fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                             Spacer(modifier = Modifier.height(10.dp))
                         }
                     }
@@ -454,6 +476,7 @@ fun JournalScreen() {
 @Composable
 fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit, onDeepReflection: suspend () -> Unit) {
     val scope = rememberCoroutineScope()
+    val clipboardManager = LocalClipboardManager.current
     var isThinking by remember { mutableStateOf(false) }
 
     val scrollTrap = remember {
@@ -463,16 +486,18 @@ fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit, onDeepReflectio
             }
         }
     }
-
     Card(shape = RoundedCornerShape(32.dp), colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f)), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp), modifier = Modifier.fillMaxWidth().height(440.dp)) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-                Column {
-                    Text(entry.date, color = MindSyncBlue, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                    Text(entry.time, color = MindSyncBlue.copy(alpha = 0.5f), fontSize = 12.sp)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(entry.date, color = MindSyncBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold, lineHeight = 14.sp)
+                    Text(entry.time, color = MindSyncBlue.copy(alpha = 0.5f), fontSize = 9.sp)
                 }
-                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp).alpha(0.3f)) { Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp)) }
+                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp).alpha(0.3f)) {
+                    Icon(Icons.Default.Delete, "Delete", modifier = Modifier.size(16.dp))
+                }
             }
+
             Column(modifier = Modifier.fillMaxSize().nestedScroll(scrollTrap).padding(start = 24.dp, end = 24.dp, bottom = 24.dp).verticalScroll(rememberScrollState())) {
                 Text(text = entry.content, color = SlateText, fontSize = 16.sp, lineHeight = 22.sp)
 
@@ -495,9 +520,13 @@ fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit, onDeepReflectio
                                         Icon(Icons.Default.AutoAwesome, null, tint = MindSyncBlue, modifier = Modifier.size(18.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text("AI Insights", color = MindSyncBlue, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                        Spacer(modifier = Modifier.weight(1f))
+                                        IconButton(onClick = { clipboardManager.setText(AnnotatedString(insight)) }, modifier = Modifier.size(20.dp).alpha(0.3f)) {
+                                            Icon(Icons.Default.ContentCopy, "Copy Insight", modifier = Modifier.size(14.dp))
+                                        }
                                     }
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    Crossfade(targetState = insight, animationSpec = tween(500), label = "insight_text") { text ->
+                                    Crossfade(targetState = insight, animationSpec = tween(500), label = "insight_cross") { text ->
                                         Text(text, fontSize = 13.sp, color = SlateText.copy(alpha = 0.8f), lineHeight = 18.sp)
                                     }
                                 }
