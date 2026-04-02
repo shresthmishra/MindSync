@@ -5,7 +5,7 @@
 
 ## Description
 
-MindSync is a comprehensive, privacy-first Android journaling application that leverages advanced on-device generative AI to provide emotional clarity. By combining local sentiment classification with large language model (LLM) processing, MindSync transforms simple daily logs into deep, actionable mindfulness insights—all without your data ever leaving your phone.
+MindSync is a comprehensive, privacy-first Android journaling application that leverages advanced on-device generative AI to provide emotional clarity. By combining local sentiment classification with large language model (LLM) processing, MindSync transforms simple daily logs into deep, actionable mindfulness insight, all without your data ever leaving your phone.
 
 ## Key Features
 
