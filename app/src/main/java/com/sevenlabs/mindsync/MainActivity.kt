@@ -132,6 +132,17 @@ fun JournalScreen() {
     val greeting: String = remember { getGreeting() }
     val dailyQuote: String = remember { getDailyQuote(context) }
     val timelineDays = remember { getPastTimelineDays() }
+    val todayLabel = remember { SimpleDateFormat("MMMM dd", Locale.getDefault()).format(Date()) }
+
+    // logic to ensure the pager always has a "Today" page if no entry exists
+    val pagerEntries = remember(entries, todayLabel) {
+        val hasTodayEntry = entries.any { it.date.contains(todayLabel) }
+        if (!hasTodayEntry) {
+            listOf(null) + entries
+        } else {
+            entries
+        }
+    }
 
     val verticalListState = rememberLazyListState()
     val snapBehavior = rememberSnapFlingBehavior(lazyListState = verticalListState)
@@ -145,7 +156,7 @@ fun JournalScreen() {
     val focusDimAlpha by animateFloatAsState(targetValue = if (isWritingFocused) 0.10f else 1f, label = "dim")
     val focusBlurRadius by animateDpAsState(targetValue = if (isWritingFocused) 14.dp else 0.dp, label = "blur")
 
-    val pagerState = rememberPagerState(pageCount = { entries.size })
+    val pagerState = rememberPagerState(pageCount = { pagerEntries.size })
     val calendarListState = rememberLazyListState()
 
     DisposableEffect(Unit) {
@@ -157,13 +168,17 @@ fun JournalScreen() {
     }
 
     LaunchedEffect(pagerState.currentPage) {
-        if (entries.isNotEmpty()) {
-            val currentEntry = entries[pagerState.currentPage]
-            val entryDate = SimpleDateFormat("MMMM dd", Locale.getDefault()).format(
-                SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault()).parse(currentEntry.date) ?: Date()
-            )
+        if (pagerEntries.isNotEmpty()) {
+            val currentItem = pagerEntries[pagerState.currentPage]
+            val dateToSync = if (currentItem == null) {
+                todayLabel
+            } else {
+                SimpleDateFormat("MMMM dd", Locale.getDefault()).format(
+                    SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault()).parse(currentItem.date) ?: Date()
+                )
+            }
             val calIndex = timelineDays.indexOfFirst {
-                SimpleDateFormat("MMMM dd", Locale.getDefault()).format(it) == entryDate
+                SimpleDateFormat("MMMM dd", Locale.getDefault()).format(it) == dateToSync
             }
             if (calIndex != -1) calendarListState.animateScrollToItem(calIndex)
         }
@@ -253,8 +268,6 @@ fun JournalScreen() {
                     containerColor = Color.White
                 )
             }
-
-            val todayLabel = remember { SimpleDateFormat("MMMM dd", Locale.getDefault()).format(Date()) }
 
             LazyColumn(
                 state = verticalListState,
@@ -359,7 +372,7 @@ fun JournalScreen() {
                                     exit = fadeOut() + scaleOut()
                                 ) {
                                     IconButton(onClick = { scope.launch { pagerState.animateScrollToPage(0) } }) {
-                                        Icon(Icons.Default.Today, "Jump to Today", tint = MindSyncBlue)
+                                        Icon(Icons.Default.Today, null, tint = MindSyncBlue)
                                     }
                                 }
                             }
@@ -374,9 +387,10 @@ fun JournalScreen() {
                                 items(timelineDays) { dateObj ->
                                     val dateLabel = SimpleDateFormat("MMMM dd", Locale.getDefault()).format(dateObj)
                                     val isToday = dateLabel == todayLabel
-                                    val currentEntryDate = if (entries.isNotEmpty() && pagerState.currentPage < entries.size) {
-                                        SimpleDateFormat("MMMM dd", Locale.getDefault()).format(
-                                            SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault()).parse(entries[pagerState.currentPage].date) ?: Date()
+                                    val currentEntryDate = if (pagerEntries.isNotEmpty() && pagerState.currentPage < pagerEntries.size) {
+                                        val item = pagerEntries[pagerState.currentPage]
+                                        if (item == null) todayLabel else SimpleDateFormat("MMMM dd", Locale.getDefault()).format(
+                                            SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault()).parse(item.date) ?: Date()
                                         )
                                     } else null
 
@@ -396,9 +410,13 @@ fun JournalScreen() {
                                                 }
                                             )
                                             .clickable {
-                                                scope.launch {
-                                                    val entryIndex = entries.indexOfFirst { it.date.contains(dateLabel) }
-                                                    if (entryIndex != -1) pagerState.animateScrollToPage(entryIndex)
+                                                if (isToday || hasEntries) {
+                                                    scope.launch {
+                                                        val entryIndex = pagerEntries.indexOfFirst {
+                                                            it?.date?.contains(dateLabel) == true || (it == null && isToday)
+                                                        }
+                                                        if (entryIndex != -1) pagerState.animateScrollToPage(entryIndex)
+                                                    }
                                                 }
                                             }
                                             .padding(vertical = 8.dp, horizontal = 4.dp)
@@ -422,24 +440,24 @@ fun JournalScreen() {
                             Spacer(modifier = Modifier.height(20.dp))
 
                             Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                                if (entries.isNotEmpty()) {
-                                    HorizontalPager(
-                                        state = pagerState,
-                                        contentPadding = PaddingValues(horizontal = 42.dp),
-                                        pageSpacing = 16.dp,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) { page ->
-                                        val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
-                                        val entry = entries[page]
+                                HorizontalPager(
+                                    state = pagerState,
+                                    contentPadding = PaddingValues(horizontal = 42.dp),
+                                    pageSpacing = 16.dp,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) { page ->
+                                    val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
+                                    val entry = pagerEntries[page]
 
-                                        Box(
-                                            modifier = Modifier.graphicsLayer {
-                                                val scale = lerp(start = 0.9f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
-                                                scaleX = scale
-                                                scaleY = scale
-                                                alpha = lerp(start = 0.5f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
-                                            }
-                                        ) {
+                                    Box(
+                                        modifier = Modifier.graphicsLayer {
+                                            val scale = lerp(start = 0.9f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
+                                            scaleX = scale
+                                            scaleY = scale
+                                            alpha = lerp(start = 0.5f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
+                                        }
+                                    ) {
+                                        if (entry != null) {
                                             PreviousEntryCard(
                                                 entry = entry,
                                                 onDelete = {
@@ -451,19 +469,39 @@ fun JournalScreen() {
                                                         val customInsight = deepReflectionHelper?.generateDeepReflection(entry.content)
                                                         if (customInsight != null) {
                                                             journalDao.insertEntry(entry.copy(aiInsight = customInsight))
-                                                            snackbarHostState.showSnackbar("Deep Reflection now available!")
+                                                            snackbarHostState.showSnackbar("Deep Reflection updated.")
                                                         }
                                                     } else {
-                                                        snackbarHostState.showSnackbar("AI model loading. Please try in a bit.")
+                                                        snackbarHostState.showSnackbar("AI model loading. Please wait.")
                                                     }
                                                 }
                                             )
+                                        } else {
+                                            // Logic when there no entries for the current day yet
+                                            Column(
+                                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.Center
+                                            ) {
+                                                Icon(Icons.Default.EditNote, null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(64.dp))
+                                                Spacer(Modifier.height(16.dp))
+                                                Text("Anything significant happen today?", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, textAlign = TextAlign.Center)
+                                                Spacer(Modifier.height(8.dp))
+                                                Text("Write about it.", color = Color.White.copy(alpha = 0.8f), fontSize = 15.sp, textAlign = TextAlign.Center)
+                                                Spacer(Modifier.height(32.dp))
+                                                Button(
+                                                    onClick = { scope.launch { verticalListState.animateScrollToItem(0) } },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = MindSyncBlue),
+                                                    shape = RoundedCornerShape(16.dp),
+                                                    modifier = Modifier.height(54.dp).fillMaxWidth(0.7f)
+                                                ) { Text("Write Entry", fontWeight = FontWeight.ExtraBold) }
+                                            }
                                         }
                                     }
                                 }
                             }
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text(text = "Scroll sideways for your history", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f), fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                            Text(text = "Looking back at the progress", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontSize = 13.sp, color = Color.White.copy(alpha = 0.7f), fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                             Spacer(modifier = Modifier.height(10.dp))
                         }
                     }
@@ -494,7 +532,7 @@ fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit, onDeepReflectio
                     Text(entry.time, color = MindSyncBlue.copy(alpha = 0.5f), fontSize = 9.sp)
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(24.dp).alpha(0.3f)) {
-                    Icon(Icons.Default.Delete, "Delete", modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp))
                 }
             }
 
@@ -522,7 +560,7 @@ fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit, onDeepReflectio
                                         Text("AI Insights", color = MindSyncBlue, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                         Spacer(modifier = Modifier.weight(1f))
                                         IconButton(onClick = { clipboardManager.setText(AnnotatedString(insight)) }, modifier = Modifier.size(20.dp).alpha(0.3f)) {
-                                            Icon(Icons.Default.ContentCopy, "Copy Insight", modifier = Modifier.size(14.dp))
+                                            Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(14.dp))
                                         }
                                     }
                                     Spacer(modifier = Modifier.height(8.dp))
