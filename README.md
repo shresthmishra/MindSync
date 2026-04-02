@@ -13,7 +13,8 @@ MindSync is a comprehensive, privacy-first Android journaling application that l
       * **Tier 1 (Sentiment Mapping):** Uses a TensorFlow Lite model trained on the GoEmotions dataset to categorize entries into 28 emotional states and provide immediate, context-aware mindfulness tips.
       * **Tier 2 (Deep Reflection):** Powered by **Gemma 2b** via MediaPipe GenAI. This tier generates unique, empathetic, and deep coaching reflections based on the raw text of your entries.
   * **Local-First Privacy:** Every byte of your journal, from the raw text to the generative AI reflections, is stored and processed locally using an encrypted Room Database.
-  * **Premium UX Details:** \* Subtle copy-to-clipboard buttons for entries and AI reflections.
+  * **Premium UX Details:**
+      * Subtle copy-to-clipboard buttons for entries and AI reflections.
       * Dynamic "Jump to Today" navigation for easy access.
       * Calming, gradient-based UI built entirely with Jetpack Compose.
 
