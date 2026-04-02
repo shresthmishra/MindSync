@@ -477,7 +477,7 @@ fun JournalScreen() {
                                                 }
                                             )
                                         } else {
-                                            // Logic when there no entries for the current day yet
+                                            // Logic when there are no entries for the current day yet
                                             Column(
                                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                                                 horizontalAlignment = Alignment.CenterHorizontally,
