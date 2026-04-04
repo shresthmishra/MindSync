@@ -62,6 +62,8 @@ import androidx.core.content.ContextCompat
 import androidx.work.*
 import com.sevenlabs.mindsync.data.AppDatabase
 import com.sevenlabs.mindsync.data.JournalEntry
+import com.sevenlabs.mindsync.data.AIInsight
+import com.sevenlabs.mindsync.data.JournalWithInsight
 import com.sevenlabs.mindsync.ui.theme.MindSyncTheme
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -97,13 +99,13 @@ fun JournalScreen() {
     var showEmptyDialog by remember { mutableStateOf(false) }
     var showSuccessDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    var entryToDelete by remember { mutableStateOf<JournalEntry?>(null) }
+    var entryToDelete by remember { mutableStateOf<JournalWithInsight?>(null) }
     var isWritingFocused by remember { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
     val database = remember { AppDatabase.getDatabase(context) }
     val journalDao = database.journalDao()
-    val entries by journalDao.getAllEntries().collectAsState(initial = emptyList())
+    val entriesWithInsights by journalDao.getJournalHistory().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
 
     var classifier by remember { mutableStateOf<EmotionClassifierHelper?>(null) }
@@ -114,7 +116,7 @@ fun JournalScreen() {
             try {
                 classifier = EmotionClassifierHelper(context)
             } catch (e: Exception) {
-                android.util.Log.e("MindSyncAI", "Classifier Error: ${e.message}")
+                Log.e("MindSyncAI", "Classifier Error: ${e.message}")
             }
 
             try {
@@ -124,7 +126,7 @@ fun JournalScreen() {
                     Log.d("MindSyncAI", "Gemma successfully initialized")
                 }
             } catch (e: Exception) {
-                android.util.Log.e("MindSyncAI", "Gemma Setup Error: ${e.message}")
+                Log.e("MindSyncAI", "Gemma Setup Error: ${e.message}")
             }
         }
     }
@@ -135,12 +137,12 @@ fun JournalScreen() {
     val todayLabel = remember { SimpleDateFormat("MMMM dd", Locale.getDefault()).format(Date()) }
 
     // logic to ensure the pager always has a "Today" page if no entry exists
-    val pagerEntries = remember(entries, todayLabel) {
-        val hasTodayEntry = entries.any { it.date.contains(todayLabel) }
+    val pagerEntries = remember(entriesWithInsights, todayLabel) {
+        val hasTodayEntry = entriesWithInsights.any { it.entry.date.contains(todayLabel) }
         if (!hasTodayEntry) {
-            listOf(null) + entries
+            listOf(null) + entriesWithInsights
         } else {
-            entries
+            entriesWithInsights
         }
     }
 
@@ -174,7 +176,7 @@ fun JournalScreen() {
                 todayLabel
             } else {
                 SimpleDateFormat("MMMM dd", Locale.getDefault()).format(
-                    SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault()).parse(currentItem.date) ?: Date()
+                    SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault()).parse(currentItem.entry.date) ?: Date()
                 )
             }
             val calIndex = timelineDays.indexOfFirst {
@@ -251,8 +253,8 @@ fun JournalScreen() {
                     text = { Text("This will permanently remove this reflection. Are you sure?", color = SlateText) },
                     confirmButton = {
                         TextButton(onClick = {
-                            entryToDelete?.let { entry ->
-                                scope.launch { journalDao.deleteEntry(entry.id) }
+                            entryToDelete?.let { entryWithInsight ->
+                                scope.launch { journalDao.deleteEntry(entryWithInsight.entry.id) }
                             }
                             showDeleteConfirm = false
                             entryToDelete = null
@@ -325,12 +327,18 @@ fun JournalScreen() {
                                                 val detectedEmotion = classifier?.classify(entryText) ?: "Neutral"
                                                 val smarterInsight = ReflectionEngine.getReflection(entryText, detectedEmotion)
 
-                                                journalDao.insertEntry(JournalEntry(
+                                                val entryId = journalDao.insertEntry(JournalEntry(
                                                     date = date,
                                                     time = time,
-                                                    content = entryText,
-                                                    aiInsight = smarterInsight
+                                                    content = entryText
+                                                )).toInt()
+
+                                                journalDao.insertInsight(AIInsight(
+                                                    entryId = entryId,
+                                                    sentiment = detectedEmotion,
+                                                    coachingText = smarterInsight
                                                 ))
+
                                                 entryText = ""; prefs.edit().remove("draft_entry").apply()
                                                 focusManager.clearFocus(); showSuccessDialog = true
                                             }
@@ -390,12 +398,12 @@ fun JournalScreen() {
                                     val currentEntryDate = if (pagerEntries.isNotEmpty() && pagerState.currentPage < pagerEntries.size) {
                                         val item = pagerEntries[pagerState.currentPage]
                                         if (item == null) todayLabel else SimpleDateFormat("MMMM dd", Locale.getDefault()).format(
-                                            SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault()).parse(item.date) ?: Date()
+                                            SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault()).parse(item.entry.date) ?: Date()
                                         )
                                     } else null
 
                                     val isSelected = currentEntryDate == dateLabel
-                                    val hasEntries = entries.any { it.date.contains(dateLabel) }
+                                    val hasEntries = entriesWithInsights.any { it.entry.date.contains(dateLabel) }
 
                                     Box(
                                         modifier = Modifier
@@ -413,7 +421,7 @@ fun JournalScreen() {
                                                 if (isToday || hasEntries) {
                                                     scope.launch {
                                                         val entryIndex = pagerEntries.indexOfFirst {
-                                                            it?.date?.contains(dateLabel) == true || (it == null && isToday)
+                                                            it?.entry?.date?.contains(dateLabel) == true || (it == null && isToday)
                                                         }
                                                         if (entryIndex != -1) pagerState.animateScrollToPage(entryIndex)
                                                     }
@@ -447,7 +455,7 @@ fun JournalScreen() {
                                     modifier = Modifier.fillMaxWidth()
                                 ) { page ->
                                     val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
-                                    val entry = pagerEntries[page]
+                                    val entryWithInsight = pagerEntries[page]
 
                                     Box(
                                         modifier = Modifier.graphicsLayer {
@@ -457,18 +465,22 @@ fun JournalScreen() {
                                             alpha = lerp(start = 0.5f, stop = 1f, fraction = 1f - pageOffset.coerceIn(0f, 1f))
                                         }
                                     ) {
-                                        if (entry != null) {
+                                        if (entryWithInsight != null) {
                                             PreviousEntryCard(
-                                                entry = entry,
+                                                entryWithInsight = entryWithInsight,
                                                 onDelete = {
-                                                    entryToDelete = entry
+                                                    entryToDelete = entryWithInsight
                                                     showDeleteConfirm = true
                                                 },
                                                 onDeepReflection = {
                                                     if (deepReflectionHelper != null) {
-                                                        val customInsight = deepReflectionHelper?.generateDeepReflection(entry.content)
+                                                        val customInsight = deepReflectionHelper?.generateDeepReflection(entryWithInsight.entry.content)
                                                         if (customInsight != null) {
-                                                            journalDao.insertEntry(entry.copy(aiInsight = customInsight))
+                                                            journalDao.insertInsight(AIInsight(
+                                                                entryId = entryWithInsight.entry.id,
+                                                                sentiment = entryWithInsight.insight?.sentiment ?: "Neutral",
+                                                                coachingText = customInsight
+                                                            ))
                                                             snackbarHostState.showSnackbar("Deep Reflection updated.")
                                                         }
                                                     } else {
@@ -512,7 +524,10 @@ fun JournalScreen() {
 }
 
 @Composable
-fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit, onDeepReflection: suspend () -> Unit) {
+fun PreviousEntryCard(entryWithInsight: JournalWithInsight, onDelete: () -> Unit, onDeepReflection: suspend () -> Unit) {
+    val entry = entryWithInsight.entry
+    val insightObj = entryWithInsight.insight
+
     val scope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
     var isThinking by remember { mutableStateOf(false) }
@@ -540,11 +555,11 @@ fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit, onDeepReflectio
                 Text(text = entry.content, color = SlateText, fontSize = 16.sp, lineHeight = 22.sp)
 
                 AnimatedVisibility(
-                    visible = entry.aiInsight != null,
+                    visible = insightObj != null,
                     enter = fadeIn(animationSpec = tween(600)) + expandVertically(),
                     exit = fadeOut() + shrinkVertically()
                 ) {
-                    entry.aiInsight?.let { insight ->
+                    insightObj?.let { insight ->
                         Column {
                             Spacer(modifier = Modifier.height(20.dp))
                             Card(
@@ -559,12 +574,12 @@ fun PreviousEntryCard(entry: JournalEntry, onDelete: () -> Unit, onDeepReflectio
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text("AI Insights", color = MindSyncBlue, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                         Spacer(modifier = Modifier.weight(1f))
-                                        IconButton(onClick = { clipboardManager.setText(AnnotatedString(insight)) }, modifier = Modifier.size(20.dp).alpha(0.3f)) {
+                                        IconButton(onClick = { clipboardManager.setText(AnnotatedString(insight.coachingText)) }, modifier = Modifier.size(20.dp).alpha(0.3f)) {
                                             Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(14.dp))
                                         }
                                     }
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    Crossfade(targetState = insight, animationSpec = tween(500), label = "insight_cross") { text ->
+                                    Crossfade(targetState = insight.coachingText, animationSpec = tween(500), label = "insight_cross") { text ->
                                         Text(text, fontSize = 13.sp, color = SlateText.copy(alpha = 0.8f), lineHeight = 18.sp)
                                     }
                                 }

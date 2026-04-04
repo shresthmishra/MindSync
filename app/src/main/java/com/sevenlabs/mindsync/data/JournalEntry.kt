@@ -9,6 +9,5 @@ data class JournalEntry(
     val id: Int = 0,
     val date: String,
     val time: String,
-    val content: String,
-    val aiInsight: String? = null
+    val content: String
 )
